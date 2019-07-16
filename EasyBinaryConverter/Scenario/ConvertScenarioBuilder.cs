@@ -21,21 +21,11 @@ namespace EasyBinaryConverter.Scenario
         /// <summary>
         /// Добавляет поле для сериализации.
         /// </summary>
-        public ConvertScenarioBuilder<T> Set<FieldType>(Expression<Func<T, FieldType>> expression)
+        public ConvertScenarioBuilder<T> Set<FieldType>(int tag, Expression<Func<T, FieldType>> expression)
         {
             var currentStep = expression.Body as MemberExpression;
             var prop = currentStep.Member as PropertyInfo;
-            _scenario.AddStep(prop.PropertyType, prop);
-
-            return this;
-        }
-
-        /// <summary>
-        /// Помечает тип, как необходимый для пропуска.
-        /// </summary>
-        public ConvertScenarioBuilder<T> Skip(Type fieldType)
-        {
-            _scenario.AddStep(fieldType, null);
+            _scenario.AddStep(prop, tag);
 
             return this;
         }
@@ -43,14 +33,6 @@ namespace EasyBinaryConverter.Scenario
         /// <summary>
         /// Строит сценарий конвертации объекта для указанной версии.
         /// </summary>
-        public void Build(int version) => _convertService.SetConvertScenario(version, _scenario);
-
-        /// <summary>
-        /// Строит кастомный сценарий конвертации объекта для указанной версии.
-        /// </summary>
-        public void BuildCustom(int version, Func<BinaryWriter, byte[]> write, Func<BinaryReader, T> read)
-        {
-            throw new NotImplementedException();
-        }
+        public void Build() => _convertService.SetConvertScenario(_scenario);
     }
 }

@@ -11,21 +11,15 @@ namespace EasyBinaryConverter.Converters
         private readonly ITypesBinaryConverter _typesBinaryConverter;
 
         /// <summary>
-        /// Текущая версия конвертера.
-        /// </summary>
-        private int CurrentVersion;
-
-        /// <summary>
         /// Сценарии по версиям.
         /// </summary>
-        private readonly Dictionary<int, ConvertScenario<T>> _convertScenariosByVersion;
+        private readonly ConvertScenario<T> _scenario;
 
-        internal BytesConverter(ITypesBinaryConverter typesBinaryConverter)
+        internal BytesConverter(ConvertScenario<T> scenario, ITypesBinaryConverter typesBinaryConverter)
         {
             _typesBinaryConverter = typesBinaryConverter;
 
-            CurrentVersion = 0;
-            _convertScenariosByVersion = new Dictionary<int, ConvertScenario<T>>();
+            _scenario = scenario;
         }
 
         public byte[] SerializeObject(object obj)
@@ -44,18 +38,19 @@ namespace EasyBinaryConverter.Converters
             using (MemoryStream ms = new MemoryStream())
             using (BinaryWriter bw = new BinaryWriter(ms))
             {
-                // Записываем текущую версию.
-                bw.Write(CurrentVersion);
-
                 // Записываем все поля
-                var steps = _convertScenariosByVersion[CurrentVersion].GetSteps();
+                var steps = _scenario.GetSteps();
                 foreach (var step in steps)
                 {
-                    if (step.Value.IsNeedSkip)
+                    if (step.IsNeedSkip)
                         continue;
 
-                    object value = step.Value.Info.GetValue(obj);
-                    _typesBinaryConverter.Write(bw, step.Key, value);
+                    // Записываем тег.
+                    bw.Write(step.Tag);
+
+                    // Записываем значение.
+                    object value = step.Info.GetValue(obj);
+                    _typesBinaryConverter.Write(bw, step.Type, value);
                 }
 
                 return ms.ToArray();
@@ -64,22 +59,16 @@ namespace EasyBinaryConverter.Converters
 
         private T Deserialize(BinaryReader br)
         {
-            // Получаем версию объекта.
-            int version = br.ReadInt32();
-
-            if (!_convertScenariosByVersion.ContainsKey(version))
-                throw new Exception($"Нет зарегистрированного сценария для версии {version} типа {typeof(T)}");
-
+            Stream stream = br.BaseStream;
             T newObject = new T();
 
-            // Вычитываем все поля
-            var steps = _convertScenariosByVersion[version].GetSteps();
-            foreach (var step in steps)
+            // Вычитываем все поля.
+            while (stream.Position != stream.Length)
             {
-                object value = _typesBinaryConverter.Read(br, step.Key);
-
-                if (!step.Value.IsNeedSkip)
-                    step.Value.Info.SetValue(newObject, value);
+                int tag = br.ReadInt32();
+                var step = _scenario.GetStep(tag);
+                object value = _typesBinaryConverter.Read(br, step.Type);
+                step.Info.SetValue(newObject, value);
             }
 
             return newObject;
@@ -92,12 +81,6 @@ namespace EasyBinaryConverter.Converters
             {
                 return Deserialize(br);
             }
-        }
-
-        internal void SetVersionConvertScenario(int version, ConvertScenario<T> scenario)
-        {
-            CurrentVersion = Math.Max(CurrentVersion, version);
-            _convertScenariosByVersion[version] = scenario;
         }
     }
 }

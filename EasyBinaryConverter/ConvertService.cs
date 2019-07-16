@@ -40,12 +40,9 @@ namespace EasyBinaryConverter
         /// <summary>
         /// Добавляет новый сценарий конвертации типа.
         /// </summary>
-        internal void SetConvertScenario<T>(int version, ConvertScenario<T> scenario) where T : class, new()
+        internal void SetConvertScenario<T>(ConvertScenario<T> scenario) where T : class, new()
         {
-            if (!_converters.ContainsKey(typeof(T)))
-                _converters[typeof(T)] = new BytesConverter<T>(_typesBinaryConverter);
-
-            Converter<T>().SetVersionConvertScenario(version, scenario);
+            _converters[typeof(T)] = new BytesConverter<T>(scenario, _typesBinaryConverter);
             _typesBinaryConverter.SetConverter(Converter<T>());
         }
     }

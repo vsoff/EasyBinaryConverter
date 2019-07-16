@@ -12,19 +12,19 @@ namespace EasyBinaryConverter.Tests
             // Настраиваем сервис.
             ConvertService convertService = new ConvertService();
             convertService.NewBuilder<People>()
-                .Set(x => x.FirstName)
-                .Set(x => x.LastName)
-                .Set(x => x.BirdthDay)
-                .Set(x => x.Height)
-                .Set(x => x.Weight)
-                .Set(x => x.FingersCount)
-                .Set(x => x.Dog)
-                .Build(1);
+                .Set(1, x => x.FirstName)
+                .Set(2, x => x.LastName)
+                .Set(3, x => x.BirdthDay)
+                .Set(4, x => x.Height)
+                .Set(5, x => x.Weight)
+                .Set(6, x => x.FingersCount)
+                .Set(7, x => x.Dog)
+                .Build();
 
             convertService.NewBuilder<Dog>()
-                .Set(x => x.Name)
-                .Set(x => x.BirdthDay)
-                .Build(1);
+                .Set(1, x => x.Name)
+                .Set(2, x => x.BirdthDay)
+                .Build();
 
             // Создаём объект.
             People p = new People
